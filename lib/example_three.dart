@@ -1,8 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:untitled18/Models/UserModel.dart';
+import 'package:flutter_api_practice/Models/UserModel.dart';
 
 class ExampleThree extends StatefulWidget {
   const ExampleThree({Key? key}) : super(key: key);
@@ -12,64 +11,58 @@ class ExampleThree extends StatefulWidget {
 }
 
 class _ExampleThreeState extends State<ExampleThree> {
-  List<UserModel> userList = [];
+  late Future<List<UserModel>> _usersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _usersFuture = getUserApi();
+  }
 
   Future<List<UserModel>> getUserApi() async {
-    final response =
-        await http.get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
-    var data = jsonDecode(response.body.toString());
+    final response = await http
+        .get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
     if (response.statusCode == 200) {
-      for (var item in data as List<dynamic>) {
-        var userData = item as Map<String, dynamic>;
-        print(userData['name']);
-        userList.add(UserModel.fromJson(userData));
-      }
-      return userList;
-    } else {
-      return userList;
+      final data = jsonDecode(response.body) as List<dynamic>;
+      return data
+          .map((i) => UserModel.fromJson(i as Map<String, dynamic>))
+          .toList();
     }
+    return [];
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text('Api Course'),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder(
-              future: getUserApi(),
-              builder: (context, AsyncSnapshot<List<UserModel>> snapshot) {
-                if (!snapshot.hasData) {
-                  return CircularProgressIndicator();
-                } else {
-                  return ListView.builder(
-                      itemCount: userList.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Card(
-                            child: Column(
-                              children: [
-                                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('name'),
-                                    Text(snapshot.data![index].name.toString()),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      });
-                }
-              },
-            ),
-          )
-        ],
+      appBar: AppBar(centerTitle: true, title: const Text('Api Course')),
+      body: FutureBuilder<List<UserModel>>(
+        future: _usersFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final userList = snapshot.data!;
+          return ListView.builder(
+            itemCount: userList.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('name'),
+                        Text(userList[index].name.toString()),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
